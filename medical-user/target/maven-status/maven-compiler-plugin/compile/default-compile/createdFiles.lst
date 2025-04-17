@@ -1,0 +1,12 @@
+com/medical/user/model/entity/Doctor.class
+com/medical/user/model/entity/OtpCode.class
+com/medical/user/mapper/OtpCodeMapper.class
+com/medical/user/service/impl/OtpServiceImpl.class
+com/medical/user/model/entity/User.class
+com/medical/user/common/Result.class
+com/medical/user/service/OtpService.class
+com/medical/user/model/vo/UserVO.class
+com/medical/user/model/dto/OtpDTO.class
+com/medical/user/mapper/UserMapper.class
+com/medical/user/config/WebConfig.class
+com/medical/user/controller/OtpController.class
