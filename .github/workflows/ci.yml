@@ -28,20 +28,23 @@ jobs:
         echo "Building with Maven..."
         mvn clean package -DskipTests
     
-    - name: List files in target directories
-      run: |
-        echo "Listing target directories..."
-        ls -la */target/ || echo "No target directories found"
-        
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+    - name: Upload Eureka Server Artifact
+      uses: actions/upload-artifact@v1
       with:
-        name: jars
-        path: |
-          **/target/*.jar
-          !**/target/original-*.jar
-          !**/target/*-sources.jar
-          !**/target/*-javadoc.jar
+        name: eureka-server
+        path: medical-eureka-server/target/medical-eureka-server-1.0-SNAPSHOT.jar
+    
+    - name: Upload Gateway Artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: gateway
+        path: medical-gateway/target/medical-gateway-1.0-SNAPSHOT.jar
+    
+    - name: Upload User Service Artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: user-service
+        path: medical-user/target/medical-user-1.0-SNAPSHOT.jar
 
   docker:
     needs: build
@@ -51,27 +54,33 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Download Artifacts
-      uses: actions/download-artifact@v2
+    - name: Create target directories
+      run: |
+        mkdir -p medical-eureka-server/target
+        mkdir -p medical-gateway/target
+        mkdir -p medical-user/target
+    
+    - name: Download Eureka Server Artifact
+      uses: actions/download-artifact@v1
       with:
-        name: jars
+        name: eureka-server
+        path: medical-eureka-server/target
+    
+    - name: Download Gateway Artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: gateway
+        path: medical-gateway/target
+    
+    - name: Download User Service Artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: user-service
+        path: medical-user/target
     
     - name: Display structure of downloaded files
       run: |
         echo "Current directory structure:"
-        ls -R
-    
-    - name: Prepare artifacts for Docker
-      run: |
-        echo "Creating target directories..."
-        mkdir -p medical-eureka-server/target
-        mkdir -p medical-gateway/target
-        mkdir -p medical-user/target
-        echo "Moving jar files..."
-        mv medical-eureka-server-1.0-SNAPSHOT.jar medical-eureka-server/target/ || echo "Eureka server jar not found"
-        mv medical-gateway-1.0-SNAPSHOT.jar medical-gateway/target/ || echo "Gateway jar not found"
-        mv medical-user-1.0-SNAPSHOT.jar medical-user/target/ || echo "User service jar not found"
-        echo "Final directory structure:"
         ls -R
     
     - name: Set up Docker Buildx
