@@ -76,6 +76,103 @@ services:
     networks:
       - medical_net
 
+  eureka-server:
+    image: ${REGISTRY}/${GITHUB_REPOSITORY}/medical-eureka-server:${IMAGE_TAG}
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  gateway:
+    image: ${REGISTRY}/${GITHUB_REPOSITORY}/medical-gateway:${IMAGE_TAG}
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  user-service:
+    image: ${REGISTRY}/${GITHUB_REPOSITORY}/medical-user:${IMAGE_TAG}
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://123.60.186.10:3306/medical_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_REDIS_HOST=123.60.186.10
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  notification-service:
+    image: ${REGISTRY}/${GITHUB_REPOSITORY}/medical-notification:${IMAGE_TAG}
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://123.60.186.10:3306/medical_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - SPRING_MAIL_HOST=smtp.qq.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  appointment-service:
+    image: ${REGISTRY}/${GITHUB_REPOSITORY}/medical-appointment:${IMAGE_TAG}
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://123.60.186.10:3306/medical_platform?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/livez"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
 # 持久化存储
 volumes:
   mysql_data:
