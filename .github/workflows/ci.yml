@@ -7,9 +7,10 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build-and-deploy:
+  # 第一阶段：构建
+  build:
+    name: Build Application
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
     - name: Checkout code
@@ -31,6 +32,27 @@ jobs:
         mvn clean package -DskipTests
         echo "Build completed, checking target directories:"
         ls -la */target/
+
+  # 第二阶段：构建和推送Docker镜像
+  docker:
+    name: Build and Push Docker Images
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+        cache: maven
+    
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -61,6 +83,17 @@ jobs:
         context: ./medical-user
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/medical-user:latest
+
+  # 第三阶段：部署
+  deploy:
+    name: Deploy to Server
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
     
     - name: Create .env file
       run: |
