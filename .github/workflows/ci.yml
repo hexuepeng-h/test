@@ -7,11 +7,13 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
     
     - name: Set up JDK 17
       uses: actions/setup-java@v3
@@ -27,61 +29,8 @@ jobs:
         ls -la
         echo "Building with Maven..."
         mvn clean package -DskipTests
-    
-    - name: Upload Eureka Server Artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: eureka-server
-        path: medical-eureka-server/target/medical-eureka-server-1.0-SNAPSHOT.jar
-    
-    - name: Upload Gateway Artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: gateway
-        path: medical-gateway/target/medical-gateway-1.0-SNAPSHOT.jar
-    
-    - name: Upload User Service Artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: user-service
-        path: medical-user/target/medical-user-1.0-SNAPSHOT.jar
-
-  docker:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Create target directories
-      run: |
-        mkdir -p medical-eureka-server/target
-        mkdir -p medical-gateway/target
-        mkdir -p medical-user/target
-    
-    - name: Download Eureka Server Artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: eureka-server
-        path: medical-eureka-server/target
-    
-    - name: Download Gateway Artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: gateway
-        path: medical-gateway/target
-    
-    - name: Download User Service Artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: user-service
-        path: medical-user/target
-    
-    - name: Display structure of downloaded files
-      run: |
-        echo "Current directory structure:"
-        ls -R
+        echo "Build completed, checking target directories:"
+        ls -la */target/
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -112,14 +61,6 @@ jobs:
         context: ./medical-user
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/medical-user:latest
-
-  deploy:
-    needs: docker
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    steps:
-    - uses: actions/checkout@v3
     
     - name: Create .env file
       run: |
